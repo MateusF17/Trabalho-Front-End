@@ -1,0 +1,128 @@
+
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AgroConnect - Login e Cadastro</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: Arial, sans-serif;
+      background: url('background.jpg') no-repeat center center fixed;
+      background-size: cover;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+    }
+
+    .container {
+      background: rgba(255, 255, 255, 0.9);
+      border-radius: 15px;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+      display: flex;
+      max-width: 900px;
+      width: 100%;
+      padding: 20px;
+    }
+
+    .section {
+      flex: 1;
+      padding: 20px;
+    }
+
+    .section h2 {
+      text-align: center;
+      color: #2d602d;
+    }
+
+    input[type="text"], input[type="password"] {
+      width: 100%;
+      padding: 10px;
+      margin: 10px 0;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+    }
+
+    button {
+      width: 100%;
+      padding: 10px;
+      background-color: #4caf50;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      font-weight: bold;
+    }
+
+    button:hover {
+      background-color: #45a049;
+    }
+
+    .divider {
+      width: 2px;
+      background: #c9e3b8;
+    }
+
+    .terms {
+      font-size: 0.9em;
+      margin: 10px 0;
+    }
+
+    .social-login {
+      display: flex;
+      justify-content: center;
+      gap: 15px;
+      margin-top: 10px;
+    }
+
+    .social-login img {
+      width: 30px;
+      height: 30px;
+      cursor: pointer;
+    }
+
+    .logo {
+      text-align: center;
+      font-size: 24px;
+      font-weight: bold;
+      margin-bottom: 20px;
+    }
+
+    .logo span {
+      color: #f4c430;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="section">
+      <div class="logo">🌾 <span>Agro</span>Connect</div>
+      <h2>Login</h2>
+      <input type="text" placeholder="E-mail">
+      <input type="password" placeholder="Senha">
+      <button>Entrar</button>
+      <p style="text-align: center; margin: 10px 0;">Esqueceu a senha?</p>
+      <div class="social-login">
+        <img src="https://cdn-icons-png.flaticon.com/512/300/300221.png" alt="Google">
+        <img src="https://cdn-icons-png.flaticon.com/512/733/733547.png" alt="Facebook">
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <div class="section">
+      <h2>Cadastrar</h2>
+      <input type="text" placeholder="Nome Completo">
+      <input type="password" placeholder="Senha">
+      <input type="password" placeholder="Confirmar Senha">
+      <div class="terms">
+        <input type="checkbox" id="termos"> <label for="termos">Aceito os termos de uso</label>
+      </div>
+      <button style="background-color: #f4c430; color: #000;">Cadastrar</button>
+    </div>
+  </div>
+</body>
+</html>
