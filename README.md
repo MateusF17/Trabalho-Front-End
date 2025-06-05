@@ -89,4 +89,38 @@ Esta é a página central da aplicação, onde os usuários interagem com os rec
 
 ---
 
-## Estrutura de Arquivos do Repositório
+## Tecnologias Utilizadas
+
+* **Frontend:**
+    * HTML5
+    * CSS3 (com Tailwind CSS)
+    * JavaScript (ES6+ Modules)
+* **Backend & Database (via Firebase):**
+    * Firebase Authentication
+    * Firebase Firestore
+    * Firebase App, Analytics
+* **Ícones:**
+    * Font Awesome
+* **Fontes:**
+    * Google Fonts (Inter)
+
+---
+
+## Para Desenvolvedores (Considerações)
+
+* **Configuração do Firebase:** As configurações do Firebase estão diretamente no arquivo `agroconnect_resource_management_v1.html`. Para produção, movê-las para variáveis de ambiente é recomendado.
+* **Segurança:** As páginas `cadastro.html` e `login.html` usam `localStorage` para uma simulação de autenticação, o que não é seguro para senhas. A autenticação robusta com Firebase Auth está em `agroconnect_resource_management_v1.html`. Idealmente, o sistema de autenticação deveria ser unificado.
+
+---
+
+## Possíveis Melhorias Futuras
+
+* Unificar o sistema de autenticação usando Firebase Auth para todas as páginas (`login.html`, `cadastro.html`).
+* Implementar a funcionalidade "Esqueceu sua senha?".
+* Paginação ou scroll infinito para a lista de recursos.
+* Filtros e busca avançada para recursos.
+* Upload direto de imagens.
+
+---
+
+Este documento visa fornecer uma base para entender o projeto Agroconnect, destacando seu caráter de aprendizado e as tecnologias exploradas.
