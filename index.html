@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="pt-BR"> <!-- Define o idioma da página como Português do Brasil -->
+<head>
+    <meta charset="UTF-8"> <!-- Define o conjunto de caracteres como UTF-8 para suportar acentuação e caracteres especiais -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"> <!-- Configura a viewport para responsividade em dispositivos móveis -->
+    <title>Agroconnect - Conectando o Campo ao Futuro</title> <!-- Título da página que aparece na aba do navegador -->
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    
+    <style>
+        body {
+            font-family: 'Inter', sans-serif; 
+            background-color: #f9fafb; 
+        }
+        .hero-section {
+            background: linear-gradient(rgba(0,0,0,0.5), rgba(0,0,0,0.5)), url('campo_com_pessoas.jpg');
+            background-size: cover; 
+            background-position: center; 
+        }
+        .cta-button { 
+            transition: all 0.3s ease; 
+        }
+        .cta-button:hover {
+            transform: translateY(-2px); 
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05); 
+        }
+        .feature-icon {
+            color: #16a34a; 
+        }
+         .section-title {
+            font-weight: 700; 
+            color: #15803d; 
+        }
+        .benefit-card {
+             background-color: #ffffff; 
+             border-radius: 0.75rem; 
+             box-shadow: 0 10px 15px -3px rgba(0,0,0,0.07), 0 4px 6px -2px rgba(0,0,0,0.05); 
+             transition: transform 0.3s ease, box-shadow 0.3s ease; 
+        }
+        .benefit-card:hover {
+            transform: translateY(-5px); 
+            box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1), 0 10px 10px -5px rgba(0,0,0,0.04); 
+        }
+    </style>
+</head>
+<body class="text-gray-700">
+
+    <!-- Cabeçalho (Header) -->
+    <header class="bg-white shadow-sm sticky top-0 z-50"> 
+        <div class="container mx-auto px-6 py-4 flex justify-between items-center"> 
+            <a href="index.html" class="text-3xl font-extrabold text-green-600"> <!-- Link para a própria landing page (index.html) -->
+                <i class="fas fa-tractor mr-2"></i>Agroconnect 
+            </a>
+            <!-- Navegação -->
+            <nav class="space-x-1 sm:space-x-2">
+                <a href="#como-funciona" class="text-gray-600 hover:text-green-600 px-2 sm:px-3 py-2 rounded-md text-sm font-medium transition-colors">Como Funciona</a>
+                <a href="#beneficios" class="text-gray-600 hover:text-green-600 px-2 sm:px-3 py-2 rounded-md text-sm font-medium transition-colors">Benefícios</a>
+                <!-- Link direto para a página de gestão de recursos -->
+                <a href="agroconnect_resource_management_v1.html" class="text-gray-600 hover:text-green-600 px-2 sm:px-3 py-2 rounded-md text-sm font-medium transition-colors">
+                    <i class="fas fa-boxes sm:mr-1"></i> <span class="hidden sm:inline">Ver Recursos</span>
+                </a>
+                <a href="#contato" class="text-gray-600 hover:text-green-600 px-2 sm:px-3 py-2 rounded-md text-sm font-medium transition-colors">Contato</a>
+                <!-- Botão de Login que leva para login.html -->
+                <a href="login.html" class="bg-green-500 hover:bg-green-600 text-white font-semibold py-2 px-3 sm:px-4 rounded-lg shadow-md cta-button text-sm">
+                    <i class="fas fa-sign-in-alt sm:mr-1"></i> <span class="hidden sm:inline">Login</span>
+                </a>
+            </nav>
+        </div>
+    </header>
+
+    <!-- Seção Hero (Principal) -->
+    <section class="hero-section text-white py-24 md:py-32"> 
+        <div class="container mx-auto px-6 text-center"> 
+            <h1 class="text-4xl md:text-6xl font-extrabold mb-6 leading-tight"> 
+                Conectando Agricultores. <br class="hidden md:block"> Fortalecendo Comunidades.
+            </h1>
+            <p class="text-lg md:text-xl mb-10 max-w-2xl mx-auto text-green-50"> 
+                A Agroconnect é a ponte digital que une pequenos agricultores aos recursos que precisam, impulsionando o desenvolvimento rural sustentável.
+            </p>
+            <!-- Botão que pode levar para a seção "Como Funciona" ou direto para os recursos -->
+            <a href="agroconnect_resource_management_v1.html" class="bg-yellow-500 hover:bg-yellow-600 text-green-900 font-bold py-4 px-10 rounded-lg shadow-xl text-lg cta-button">
+                Explorar Recursos Agora
+            </a>
+        </div>
+    </section>
+
+    <!-- Seção "Como Funciona" -->
+    <section id="como-funciona" class="py-16 md:py-24 bg-gray-50"> 
+        <div class="container mx-auto px-6">
+            <h2 class="text-3xl md:text-4xl section-title text-center mb-6">Como a Agroconnect Transforma?</h2> 
+            <p class="text-center text-lg text-gray-600 mb-16 max-w-3xl mx-auto"> 
+                Facilitamos o acesso a insumos, ferramentas e conhecimentos, criando uma rede de colaboração e crescimento para o agricultor familiar.
+            </p>
+            <div class="grid md:grid-cols-3 gap-10 text-center"> 
+                <div class="p-6 bg-white rounded-xl shadow-lg"> 
+                    <div class="text-5xl mb-6 feature-icon">
+                        <i class="fas fa-search-location"></i> 
+                    </div>
+                    <h3 class="text-xl font-semibold text-gray-800 mb-3">Encontre Recursos</h3>
+                    <p class="text-gray-600">Navegue por uma vasta gama de recursos agrícolas disponíveis na sua região, desde sementes e fertilizantes até equipamentos e serviços.</p>
+                     <a href="agroconnect_resource_management_v1.html" class="mt-4 inline-block text-green-600 hover:text-green-700 font-semibold">Ver Recursos &rarr;</a>
+                </div>
+                <div class="p-6 bg-white rounded-xl shadow-lg"> 
+                    <div class="text-5xl mb-6 feature-icon">
+                        <i class="fas fa-hands-helping"></i> 
+                    </div>
+                    <h3 class="text-xl font-semibold text-gray-800 mb-3">Compartilhe e Colabore</h3>
+                    <p class="text-gray-600">Disponibilize seus próprios recursos excedentes, como ferramentas, mudas ou até mesmo mão de obra, fortalecendo a economia local.</p>
+                     <a href="agroconnect_resource_management_v1.html#adicionarRecurso" class="mt-4 inline-block text-green-600 hover:text-green-700 font-semibold">Adicionar Recurso &rarr;</a>
+                </div>
+                <div class="p-6 bg-white rounded-xl shadow-lg"> 
+                    <div class="text-5xl mb-6 feature-icon">
+                        <i class="fas fa-network-wired"></i> 
+                    </div>
+                    <h3 class="text-xl font-semibold text-gray-800 mb-3">Conecte-se</h3>
+                    <p class="text-gray-600">Entre em contato direto com outros agricultores e fornecedores, estabelecendo parcerias valiosas e expandindo sua rede.</p>
+                    <!-- Poderia levar para uma seção de comunidade/contato ou para a lista de recursos onde o contato é feito -->
+                     <a href="agroconnect_resource_management_v1.html" class="mt-4 inline-block text-green-600 hover:text-green-700 font-semibold">Explorar Conexões &rarr;</a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Seção de Benefícios -->
+    <section id="beneficios" class="py-16 md:py-24"> 
+        <div class="container mx-auto px-6">
+            <h2 class="text-3xl md:text-4xl section-title text-center mb-16">Benefícios para Todos na Cadeia Agrícola</h2> 
+            <div class="grid md:grid-cols-1 lg:grid-cols-2 gap-10"> 
+                <div class="benefit-card p-8"> 
+                    <div class="flex items-center mb-4"> 
+                        <div class="text-4xl mr-4 feature-icon"><i class="fas fa-leaf"></i></div> 
+                        <h3 class="text-2xl font-semibold text-gray-800">Para Pequenos Agricultores</h3>
+                    </div>
+                    <ul class="list-disc list-inside text-gray-600 space-y-2"> 
+                        <li>Acesso facilitado a insumos de qualidade a preços justos.</li>
+                        <li>Oportunidade de encontrar ferramentas e equipamentos específicos.</li>
+                        <li>Redução de custos através da partilha e compra conjunta.</li>
+                        <li>Conexão com assistência técnica e novos conhecimentos.</li>
+                        <li>Maior visibilidade para seus produtos e necessidades.</li>
+                    </ul>
+                </div>
+                <div class="benefit-card p-8"> 
+                     <div class="flex items-center mb-4">
+                        <div class="text-4xl mr-4 feature-icon"><i class="fas fa-store"></i></div> 
+                        <h3 class="text-2xl font-semibold text-gray-800">Para Fornecedores e Comunidade</h3>
+                    </div>
+                    <ul class="list-disc list-inside text-gray-600 space-y-2"> 
+                        <li>Canal direto para ofertar produtos e serviços ao público certo.</li>
+                        <li>Otimização da distribuição e redução de desperdícios.</li>
+                        <li>Estímulo à economia circular e ao desenvolvimento local.</li>
+                        <li>Fortalecimento das cooperativas e associações rurais.</li>
+                        <li>Promoção de práticas agrícolas mais sustentáveis.</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Seção de Chamada para Ação (Call to Action) Final -->
+    <section id="contato" class="py-16 md:py-24 bg-green-600 text-white"> 
+        <div class="container mx-auto px-6 text-center">
+            <h2 class="text-3xl md:text-4xl font-bold mb-6">Pronto para Transformar sua Produção?</h2> 
+            <p class="text-lg md:text-xl mb-10 max-w-2xl mx-auto text-green-100"> 
+                Junte-se à Agroconnect e faça parte da revolução agrícola na sua comunidade. Conecte-se, colabore e cultive o futuro!
+            </p>
+            <a href="mailto:contato@agroconnect.com.br?subject=Interesse na Plataforma Agroconnect" 
+               class="bg-yellow-500 hover:bg-yellow-600 text-green-900 font-bold py-4 px-10 rounded-lg shadow-xl text-lg cta-button inline-block">
+                Entre em Contato Agora
+            </a>
+            <p class="mt-6 text-sm text-green-200">Ou <a href="agroconnect_resource_management_v1.html" class="underline hover:text-yellow-300">acesse a plataforma de recursos</a>.</p>
+        </div>
+    </section>
+
+    <!-- Scripts JavaScript -->
+    <script>
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                // Remove o preventDefault se o link for para outra página
+                if (this.getAttribute('href').startsWith('#')) {
+                    e.preventDefault(); 
+                    const targetId = this.getAttribute('href'); 
+                    const targetElement = document.querySelector(targetId); 
+                    if (targetElement) {
+                        targetElement.scrollIntoView({ 
+                            behavior: 'smooth' 
+                        });
+                    }
+                }
+            });
+        });
+    </script>
+
+</body>
+</html>

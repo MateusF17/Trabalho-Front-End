@@ -1,0 +1,571 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Agroconnect - Gestão de Recursos Agrícolas</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <script type="module">
+        // Importações do Firebase
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, addDoc, getDocs, onSnapshot, doc, setDoc, deleteDoc, updateDoc, query, where, serverTimestamp, runTransaction } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { initializeApp } from "firebase/app";
+        import { getAnalytics } from "firebase/analytics";
+        // Configuração do Firebase (Adaptar se necessário)
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'agroconnect-resource-app'; // Novo ID para esta app
+        
+        const firebaseConfig = {
+              apiKey: "AIzaSyARiFzTewJxYGEM46bxdx1TbXY8sK_e2hI",
+            authDomain: "agroconnect-5ae42.firebaseapp.com",
+            projectId: "agroconnect-5ae42",
+            storageBucket: "agroconnect-5ae42.firebasestorage.app",
+            messagingSenderId: "943073408850",
+            appId: "1:943073408850:web:758d005dcfd0c9c2b1ac8b",
+            measurementId: "G-GMCSKVG16M"
+            };
+
+        let app;
+        let auth;
+        let db;
+        let userId; // ID do usuário autenticado
+        let userDisplayName; // Nome de exibição do usuário
+
+        try {
+            app = initializeApp(firebaseConfig);
+            auth = getAuth(app);
+            db = getFirestore(app);
+            // Firestore.setLogLevel('debug'); // Para debug, se necessário
+        } catch (error) {
+            console.error("Erro ao inicializar Firebase:", error);
+            displayMessage("Erro crítico ao conectar com a base de dados. Funcionalidades limitadas.", "error");
+        }
+        
+        // Nome da coleção no Firestore para esta aplicação
+        const AGRO_RESOURCES_COLLECTION = `/artifacts/${appId}/public/data/agro_resources_v2`;
+
+        // Elementos da UI
+        const resourcesGrid = document.getElementById('resourcesGrid');
+        const addResourceForm = document.getElementById('addResourceForm');
+        const loadingIndicator = document.getElementById('loadingIndicator');
+        const messageContainer = document.getElementById('messageContainer');
+        const currentUserNameElement = document.getElementById('currentUserName'); 
+        const noResourcesMessage = document.getElementById('noResourcesMessage');
+
+        // Inputs do formulário
+        const resourceNameInput = document.getElementById('resourceName');
+        const resourceCategoryInput = document.getElementById('resourceCategory');
+        const resourceDescriptionInput = document.getElementById('resourceDescription');
+        const resourceQuantityInput = document.getElementById('resourceQuantity');
+        const resourceLocationInput = document.getElementById('resourceLocation');
+        const resourceContactNameInput = document.getElementById('resourceContactName');
+        const resourceContactPhoneInput = document.getElementById('resourceContactPhone');
+        const resourceImageUrlInput = document.getElementById('resourceImageUrl'); 
+
+
+        // --- Funções Auxiliares ---
+        function displayMessage(text, type = 'info', duration = 5000) {
+            if (!messageContainer) return;
+            messageContainer.innerHTML = '';
+            const messageDiv = document.createElement('div');
+            messageDiv.textContent = text;
+            messageDiv.className = `p-3 mb-4 text-sm rounded-lg shadow ${
+                type === 'error' ? 'bg-red-100 text-red-700 border border-red-300' : 
+                type === 'success' ? 'bg-green-100 text-green-700 border border-green-300' : 
+                'bg-blue-100 text-blue-700 border border-blue-300'
+            }`;
+            messageContainer.appendChild(messageDiv);
+            setTimeout(() => messageDiv.remove(), duration);
+        }
+        
+        function setLoading(isLoading) {
+            if (loadingIndicator) loadingIndicator.style.display = isLoading ? 'flex' : 'none';
+        }
+        
+        function sanitizeHTML(str) {
+            if (str === null || typeof str === 'undefined') return '';
+            const temp = document.createElement('div');
+            temp.textContent = str;
+            return temp.innerHTML;
+        }
+
+        // --- Funções Principais da Aplicação ---
+
+        // Renderizar Card de Recurso
+        function renderResourceCard(docData, docId) {
+            const resource = docData;
+            const card = document.createElement('div');
+            card.className = 'bg-white p-5 rounded-xl shadow-lg hover:shadow-2xl transition-shadow duration-300 flex flex-col justify-between';
+            
+            let imageHtml = `<img src="https://placehold.co/400x250/e2e8f0/94a3b8?text=Sem+Imagem&font=inter" alt="[Imagem de ${sanitizeHTML(resource.name)}]" class="w-full h-48 object-cover rounded-lg mb-4 bg-gray-200">`;
+            if (resource.imageUrl && resource.imageUrl.trim() !== '') {
+                imageHtml = `<img src="${sanitizeHTML(resource.imageUrl)}" alt="[Imagem de ${sanitizeHTML(resource.name)}]" class="w-full h-48 object-cover rounded-lg mb-4" onerror="this.onerror=null;this.src='https://placehold.co/400x250/e2e8f0/94a3b8?text=Imagem+Inválida&font=inter';">`;
+            }
+
+            const quantityAvailable = parseInt(resource.quantity, 10);
+            const isAvailable = quantityAvailable > 0;
+            const availabilityText = isAvailable ? `${quantityAvailable} unidade(s) disponível(is)` : 'Totalmente Reservado';
+            const availabilityColor = isAvailable ? 'text-green-600' : 'text-red-600';
+            
+            // Exibir o nome do criador do recurso, se disponível, caso contrário "Desconhecido"
+            let addedByDisplay = resource.addedByName || 'Desconhecido';
+            // Se mesmo assim for uma string vazia (caso addedByName seja "" no banco), garantir "Desconhecido"
+            if (addedByDisplay.trim() === '' && resource.addedBy) { 
+                addedByDisplay = 'Desconhecido'; // Ou 'Usuário Anônimo' se preferir quando addedBy existe mas nome não
+            }
+
+
+            card.innerHTML = `
+                <div>
+                    ${imageHtml}
+                    <h3 class="text-2xl font-bold text-green-700 mb-2">${sanitizeHTML(resource.name)}</h3>
+                    <p class="text-xs text-gray-500 mb-2 bg-green-50 inline-block px-2 py-1 rounded-full">${sanitizeHTML(resource.category)}</p>
+                    <p class="text-gray-600 text-sm mb-3 h-20 overflow-y-auto">${sanitizeHTML(resource.description)}</p>
+                    <div class="space-y-1 text-sm mb-3">
+                        <p><i class="fas fa-map-marker-alt mr-2 text-green-500"></i><strong>Local:</strong> ${sanitizeHTML(resource.location)}</p>
+                        <p><i class="fas fa-user mr-2 text-green-500"></i><strong>Contato:</strong> ${sanitizeHTML(resource.contactName)} (${sanitizeHTML(resource.contactPhone)})</p>
+                        <p class="${availabilityColor} font-semibold"><i class="fas fa-box-open mr-2"></i>${availabilityText}</p>
+                         <p class="text-xs text-gray-400"><i class="fas fa-user-tag mr-1"></i>Adicionado por: <span class="font-semibold text-xs">${sanitizeHTML(addedByDisplay)}</span></p>
+                    </div>
+                </div>
+                <div class="mt-auto">
+                    <button data-id="${docId}" data-name="${sanitizeHTML(resource.name)}" 
+                            class="reserve-btn w-full ${isAvailable ? 'bg-green-500 hover:bg-green-600' : 'bg-gray-400 cursor-not-allowed'} text-white font-semibold py-2 px-4 rounded-lg transition-colors text-sm"
+                            ${!isAvailable ? 'disabled' : ''}>
+                        ${isAvailable ? '<i class="fas fa-calendar-check mr-2"></i>Reservar 1 Unidade' : 'Indisponível'}
+                    </button>
+                     ${ auth.currentUser && resource.addedBy === auth.currentUser.uid ? `
+                        <button data-id="${docId}" data-name="${sanitizeHTML(resource.name)}" class="delete-resource-btn w-full bg-red-500 hover:bg-red-600 text-white font-semibold py-2 px-4 rounded-lg transition-colors text-sm mt-2">
+                            <i class="fas fa-trash-alt mr-2"></i>Excluir Recurso
+                        </button>
+                    ` : ''}
+                </div>
+            `;
+            
+            const reserveButton = card.querySelector('.reserve-btn');
+            if (reserveButton && isAvailable) {
+                reserveButton.addEventListener('click', async (e) => {
+                    const resourceId = e.target.closest('button').dataset.id;
+                    const resourceName = e.target.closest('button').dataset.name;
+                    if (await showCustomConfirm(`Você confirma a reserva de 1 unidade do recurso "${resourceName}"?`)) {
+                        await reserveResource(resourceId);
+                    }
+                });
+            }
+
+            const deleteButton = card.querySelector('.delete-resource-btn');
+            if (deleteButton) {
+                deleteButton.addEventListener('click', async (e) => {
+                    const resourceId = e.target.closest('button').dataset.id;
+                    const resourceName = e.target.closest('button').dataset.name;
+                     if (await showCustomConfirm(`Tem certeza que deseja EXCLUIR o recurso "${resourceName}"? Esta ação não pode ser desfeita.`)) {
+                        await deleteResource(resourceId);
+                    }
+                });
+            }
+            return card;
+        }
+        
+        // Carregar Recursos do Firestore
+        async function loadResources() {
+            if (!db || !auth.currentUser) {
+                setLoading(false);
+                if (noResourcesMessage) noResourcesMessage.classList.remove('hidden');
+                if (resourcesGrid) resourcesGrid.innerHTML = '';
+                return;
+            }
+            setLoading(true);
+            if (resourcesGrid) resourcesGrid.innerHTML = '';
+            if (noResourcesMessage) noResourcesMessage.classList.add('hidden');
+
+            const q = query(collection(db, AGRO_RESOURCES_COLLECTION));
+            
+            onSnapshot(q, (querySnapshot) => {
+                setLoading(false);
+                if (resourcesGrid) resourcesGrid.innerHTML = ''; 
+                if (querySnapshot.empty) {
+                    if (noResourcesMessage) noResourcesMessage.classList.remove('hidden');
+                    return;
+                }
+                
+                if (noResourcesMessage) noResourcesMessage.classList.add('hidden');
+                
+                let resourcesData = [];
+                querySnapshot.forEach((doc) => {
+                    resourcesData.push({ id: doc.id, ...doc.data() });
+                });
+
+                resourcesData.sort((a, b) => {
+                    const timeA = a.dateAdded ? a.dateAdded.toMillis() : 0;
+                    const timeB = b.dateAdded ? b.dateAdded.toMillis() : 0;
+                    return timeB - timeA;
+                });
+
+                resourcesData.forEach(resource => {
+                    if (resourcesGrid) resourcesGrid.appendChild(renderResourceCard(resource, resource.id));
+                });
+
+            }, (error) => {
+                console.error("Erro ao carregar recursos em tempo real: ", error);
+                displayMessage("Erro ao buscar recursos. Tente recarregar.", "error");
+                setLoading(false);
+                if (noResourcesMessage) noResourcesMessage.classList.remove('hidden');
+            });
+        }
+
+        // Adicionar Novo Recurso
+        async function handleAddResource(event) {
+            event.preventDefault();
+            if (!db || !auth.currentUser) {
+                displayMessage("Você precisa estar autenticado para adicionar recursos.", "error");
+                return;
+            }
+
+            const resourceData = {
+                name: resourceNameInput.value.trim(),
+                category: resourceCategoryInput.value,
+                description: resourceDescriptionInput.value.trim(),
+                quantity: parseInt(resourceQuantityInput.value, 10) || 0,
+                location: resourceLocationInput.value.trim(),
+                contactName: resourceContactNameInput.value.trim(),
+                contactPhone: resourceContactPhoneInput.value.trim(),
+                imageUrl: resourceImageUrlInput.value.trim(),
+                dateAdded: serverTimestamp(),
+                addedBy: userId, 
+                addedByName: (userDisplayName && userDisplayName.trim() !== '') ? userDisplayName : null, 
+                isReserved: false,
+                reservations: [] 
+            };
+
+            if (!resourceData.name || !resourceData.category || !resourceData.location || resourceData.quantity < 0 || !resourceData.contactName) {
+                displayMessage("Preencha todos os campos obrigatórios (*) e verifique a quantidade.", "error");
+                return;
+            }
+            
+            setLoading(true);
+            try {
+                await addDoc(collection(db, AGRO_RESOURCES_COLLECTION), resourceData);
+                displayMessage(`Recurso "${sanitizeHTML(resourceData.name)}" adicionado com sucesso!`, 'success');
+                addResourceForm.reset();
+            } catch (error) {
+                console.error("Erro ao adicionar recurso: ", error);
+                displayMessage("Falha ao adicionar o recurso. Tente novamente.", "error");
+            } finally {
+                setLoading(false);
+            }
+        }
+
+        // Reservar Recurso
+        async function reserveResource(resourceId) {
+            if (!db || !auth.currentUser) {
+                displayMessage("Você precisa estar autenticado para reservar.", "error");
+                return;
+            }
+            setLoading(true);
+            const resourceRef = doc(db, AGRO_RESOURCES_COLLECTION, resourceId);
+
+            try {
+                await runTransaction(db, async (transaction) => {
+                    const resourceDoc = await transaction.get(resourceRef);
+                    if (!resourceDoc.exists()) {
+                        throw "Documento não existe!";
+                    }
+
+                    const currentQuantity = resourceDoc.data().quantity;
+                    if (currentQuantity <= 0) {
+                        throw "Recurso já está totalmente reservado ou indisponível.";
+                    }
+                    
+                    const newQuantity = currentQuantity - 1;
+                    transaction.update(resourceRef, { quantity: newQuantity });
+                });
+                displayMessage("Recurso reservado com sucesso!", "success");
+            } catch (error) {
+                console.error("Erro na transação de reserva: ", error);
+                displayMessage(`Falha ao reservar: ${error.toString()}`, "error");
+            } finally {
+                setLoading(false);
+            }
+        }
+        
+        // Excluir Recurso
+        async function deleteResource(docId) {
+            if (!db || !auth.currentUser) {
+                displayMessage("Você precisa estar autenticado para excluir.", "error");
+                return;
+            }
+            
+            const resourceRef = doc(db, AGRO_RESOURCES_COLLECTION, docId);
+            try {
+                const resourceSnap = await getDoc(resourceRef);
+                if (resourceSnap.exists()) {
+                    if (resourceSnap.data().addedBy !== auth.currentUser.uid) {
+                        displayMessage("Você não tem permissão para excluir este recurso.", "error");
+                        return;
+                    }
+                } else {
+                     displayMessage("Recurso não encontrado para exclusão.", "error");
+                     return;
+                }
+            } catch (e) {
+                 console.error("Erro ao verificar permissão de exclusão:", e);
+                 displayMessage("Erro ao verificar permissão.", "error");
+                 return;
+            }
+
+            setLoading(true);
+            try {
+                await deleteDoc(doc(db, AGRO_RESOURCES_COLLECTION, docId));
+                displayMessage("Recurso excluído com sucesso.", "success");
+            } catch (error)
+{
+                console.error("Erro ao excluir recurso: ", error);
+                displayMessage("Erro ao excluir o recurso. Tente novamente.", "error");
+            } finally {
+                setLoading(false);
+            }
+        }
+
+        // Modal de Confirmação Customizado
+        async function showCustomConfirm(message) {
+            return new Promise((resolve) => {
+                const modalId = `customConfirmModal-${Date.now()}`;
+                const modalHtml = `
+                    <div id="${modalId}" class="fixed inset-0 bg-gray-800 bg-opacity-75 overflow-y-auto h-full w-full flex items-center justify-center z-50 p-4">
+                        <div class="bg-white p-6 rounded-lg shadow-xl max-w-sm w-full mx-auto">
+                            <p class="text-lg mb-6 text-gray-800">${sanitizeHTML(message)}</p>
+                            <div class="flex justify-end space-x-3">
+                                <button id="confirmCancel-${modalId}" class="px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300 transition-colors">Cancelar</button>
+                                <button id="confirmOk-${modalId}" class="px-4 py-2 bg-red-500 text-white rounded-md hover:bg-red-600 transition-colors">Confirmar</button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                document.body.insertAdjacentHTML('beforeend', modalHtml);
+
+                const confirmModal = document.getElementById(modalId);
+                const confirmOkButton = document.getElementById(`confirmOk-${modalId}`);
+                const confirmCancelButton = document.getElementById(`confirmCancel-${modalId}`);
+
+                confirmOkButton.onclick = () => { confirmModal.remove(); resolve(true); };
+                confirmCancelButton.onclick = () => { confirmModal.remove(); resolve(false); };
+            });
+        }
+
+        // Autenticação e Inicialização da App
+        async function initializeAppAndAuth() {
+            if (!auth || !db) {
+                console.error("Firebase Auth ou Firestore não estão disponíveis.");
+                displayMessage("Serviço de autenticação ou base de dados indisponível.", "error");
+                setLoading(false);
+                if (noResourcesMessage) noResourcesMessage.classList.remove('hidden');
+                return;
+            }
+            
+            setLoading(true);
+            onAuthStateChanged(auth, async (user) => {
+                if (user) {
+                    userId = user.uid;
+                    userDisplayName = user.displayName; 
+
+                    if (currentUserNameElement) {
+                        if (userDisplayName && userDisplayName.trim() !== '') {
+                            currentUserNameElement.textContent = sanitizeHTML(userDisplayName);
+                        } else {
+                            currentUserNameElement.textContent = `Anônimo (${userId.substring(0,6)}...)`;
+                        }
+                    }
+                    displayMessage("Conectado! Carregando recursos...", "success", 2000);
+                    await loadResources();
+                } else {
+                    userId = `anon-${crypto.randomUUID()}`; 
+                    userDisplayName = null; 
+                    if (currentUserNameElement) currentUserNameElement.textContent = "Anônimo (conectando...)";
+                    try {
+                        if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                            await signInWithCustomToken(auth, __initial_auth_token);
+                        } else {
+                            await signInAnonymously(auth);
+                        }
+                    } catch (error) {
+                        console.error("Erro na autenticação anônima/customizada:", error);
+                        displayMessage("Falha na autenticação. Recursos podem não carregar.", "error");
+                        setLoading(false);
+                        if (noResourcesMessage) noResourcesMessage.classList.remove('hidden');
+                         await loadResources(); 
+                    }
+                }
+            }, (error) => {
+                console.error("Erro no observador de estado de autenticação:", error);
+                displayMessage("Erro ao verificar status de autenticação.", "error");
+                setLoading(false);
+                if (noResourcesMessage) noResourcesMessage.classList.remove('hidden');
+            });
+        }
+
+        // Event Listeners
+        document.addEventListener('DOMContentLoaded', () => {
+            if (addResourceForm) {
+                addResourceForm.addEventListener('submit', handleAddResource);
+            }
+            if (db && auth) {
+                initializeAppAndAuth();
+            } else {
+                console.error("Firebase não inicializado corretamente.");
+                 displayMessage("Falha crítica ao carregar. Tente recarregar a página.", "error");
+                 setLoading(false);
+                 if (noResourcesMessage) noResourcesMessage.classList.remove('hidden');
+            }
+        });
+    </script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f0fdf4; /* Verde bem clarinho */
+        }
+        /* Custom scrollbar para descrição */
+        .h-20.overflow-y-auto::-webkit-scrollbar { width: 5px; }
+        .h-20.overflow-y-auto::-webkit-scrollbar-track { background: #f1f1f1; border-radius: 10px; }
+        .h-20.overflow-y-auto::-webkit-scrollbar-thumb { background: #888; border-radius: 10px; }
+        .h-20.overflow-y-auto::-webkit-scrollbar-thumb:hover { background: #555; }
+        
+        #loadingIndicator {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background-color: rgba(255, 255, 255, 0.85); z-index: 9999;
+            display: flex; align-items: center; justify-content: center;
+            backdrop-filter: blur(3px); -webkit-backdrop-filter: blur(3px);
+        }
+        .spinner {
+            border: 4px solid rgba(0, 0, 0, 0.1); width: 40px; height: 40px;
+            border-radius: 50%; border-left-color: #16a34a; /* Verde Agroconnect */
+            animation: spin 1s ease-in-out infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        /* Estilo para o placeholder de "nenhum recurso" */
+        #noResourcesMessage {
+            border: 2px dashed #cbd5e1; /* gray-300 */
+        }
+    </style>
+</head>
+<body class="text-gray-800">
+
+    <!-- Indicador de Carregamento Global -->
+    <div id="loadingIndicator" style="display: none;">
+        <div class="spinner"></div>
+        <p class="ml-4 text-lg text-green-700 font-semibold">Carregando Agroconnect...</p>
+    </div>
+
+    <!-- Container de Mensagens Globais -->
+    <div id="messageContainer" class="fixed top-5 right-5 z-[10000] w-full max-w-xs sm:max-w-sm"></div>
+
+    <!-- Cabeçalho -->
+    <header class="bg-green-600 text-white shadow-lg sticky top-0 z-40">
+        <div class="container mx-auto px-4 sm:px-6 py-4 flex flex-col sm:flex-row justify-between items-center">
+            <a href="#" class="text-3xl font-extrabold hover:text-green-200 transition-colors">
+                <i class="fas fa-tractor mr-2"></i>Agroconnect <span class="text-sm font-normal">Recursos</span>
+            </a>
+             <div class="text-xs mt-2 sm:mt-0">
+                Usuário: <span id="currentUserName" class="font-semibold bg-green-700 px-2 py-0.5 rounded">Carregando...</span>
+            </div>
+        </div>
+    </header>
+
+    <!-- Seção Principal -->
+    <main class="container mx-auto p-4 sm:p-6">
+        
+        <!-- Seção Adicionar Novo Recurso -->
+        <section id="adicionarRecurso" class="mb-10 p-6 bg-white rounded-xl shadow-xl border border-green-200">
+            <h2 class="text-3xl font-bold text-green-700 mb-6 text-center border-b-2 border-green-200 pb-3">
+                <i class="fas fa-plus-circle mr-2"></i>Cadastrar Novo Recurso Agrícola
+            </h2>
+            <form id="addResourceForm" class="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-5">
+                <!-- Coluna 1 -->
+                <div class="md:col-span-1 space-y-5">
+                    <div>
+                        <label for="resourceName" class="block text-sm font-medium text-gray-700 mb-1">Nome do Recurso <span class="text-red-500">*</span></label>
+                        <input type="text" id="resourceName" required class="w-full px-3 py-2.5 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all" placeholder="Ex: Sementes de Milho Crioulo">
+                    </div>
+                    <div>
+                        <label for="resourceCategory" class="block text-sm font-medium text-gray-700 mb-1">Categoria <span class="text-red-500">*</span></label>
+                        <select id="resourceCategory" required class="w-full px-3 py-2.5 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all bg-white">
+                            <option value="">Selecione...</option>
+                            <option value="Sementes">Sementes</option>
+                            <option value="Mudas">Mudas</option>
+                            <option value="Fertilizantes/Adubos">Fertilizantes/Adubos</option>
+                            <option value="Defensivos Naturais">Defensivos Naturais</option>
+                            <option value="Ferramentas Manuais">Ferramentas Manuais</option>
+                            <option value="Equipamentos Pequenos">Equipamentos Pequenos</option>
+                            <option value="Mão de Obra">Mão de Obra (Oferta/Procura)</option>
+                            <option value="Transporte/Logística">Transporte/Logística</option>
+                            <option value="Consultoria/Assistência">Consultoria/Assistência</option>
+                            <option value="Animais (Pequeno Porte)">Animais (Pequeno Porte)</option>
+                            <option value="Produtos da Fazenda (Troca/Venda)">Produtos da Fazenda (Troca/Venda)</option>
+                            <option value="Outros">Outros</option>
+                        </select>
+                    </div>
+                     <div>
+                        <label for="resourceQuantity" class="block text-sm font-medium text-gray-700 mb-1">Quantidade Disponível <span class="text-red-500">*</span></label>
+                        <input type="number" id="resourceQuantity" required min="0" class="w-full px-3 py-2.5 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all" placeholder="Ex: 10 (unidades, kg, horas, etc.)">
+                    </div>
+                    <div>
+                        <label for="resourceImageUrl" class="block text-sm font-medium text-gray-700 mb-1">URL da Imagem (Opcional)</label>
+                        <input type="url" id="resourceImageUrl" class="w-full px-3 py-2.5 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all" placeholder="https://exemplo.com/imagem.jpg">
+                    </div>
+                </div>
+
+                <!-- Coluna 2 -->
+                <div class="md:col-span-1 space-y-5">
+                    <div>
+                        <label for="resourceDescription" class="block text-sm font-medium text-gray-700 mb-1">Descrição Detalhada</label>
+                        <textarea id="resourceDescription" rows="3" class="w-full px-3 py-2.5 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all" placeholder="Detalhes sobre o recurso, condição, etc."></textarea>
+                    </div>
+                    <div>
+                        <label for="resourceLocation" class="block text-sm font-medium text-gray-700 mb-1">Localização (Comunidade/Região) <span class="text-red-500">*</span></label>
+                        <input type="text" id="resourceLocation" required class="w-full px-3 py-2.5 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all" placeholder="Ex: Sítio Boa Esperança, Povoado Centro">
+                    </div>
+                     <div>
+                        <label for="resourceContactName" class="block text-sm font-medium text-gray-700 mb-1">Nome do Contato <span class="text-red-500">*</span></label>
+                        <input type="text" id="resourceContactName" required class="w-full px-3 py-2.5 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all" placeholder="Seu Nome">
+                    </div>
+                    <div>
+                        <label for="resourceContactPhone" class="block text-sm font-medium text-gray-700 mb-1">Telefone/WhatsApp <span class="text-red-500">*</span></label>
+                        <input type="tel" id="resourceContactPhone" required class="w-full px-3 py-2.5 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all" placeholder="(99) 91234-5678">
+                    </div>
+                </div>
+                
+                <!-- Botão de Envio -->
+                <div class="md:col-span-2 text-right mt-4">
+                    <button type="submit" class="bg-green-600 hover:bg-green-700 text-white font-semibold py-3 px-8 rounded-lg shadow-md hover:shadow-lg transition-all transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-opacity-50">
+                        <i class="fas fa-save mr-2"></i>Salvar Recurso
+                    </button>
+                </div>
+            </form>
+        </section>
+
+        <!-- Seção de Listagem de Recursos -->
+        <section id="listaRecursos">
+            <h2 class="text-3xl font-bold text-green-700 mb-8 text-center">
+                <i class="fas fa-boxes mr-2"></i>Recursos Disponíveis na Comunidade
+            </h2>
+            <div id="resourcesGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 auto-rows-fr">
+                <!-- Cards de recursos serão inseridos aqui pelo JavaScript -->
+            </div>
+            <!-- Mensagem para quando não houver recursos -->
+            <div id="noResourcesMessage" class="hidden mt-10 p-10 text-center text-gray-500 rounded-lg bg-gray-50">
+                <i class="fas fa-folder-open fa-3x mb-4 text-gray-400"></i>
+                <p class="text-xl font-semibold">Nenhum recurso encontrado no momento.</p>
+                <p>Que tal adicionar o primeiro e ajudar a comunidade?</p>
+            </div>
+        </section>
+    </main>
+
+    <!-- Rodapé foi removido -->
+    <!-- Script para atualizar o ano no rodapé foi removido -->
+
+</body>
+</html>
